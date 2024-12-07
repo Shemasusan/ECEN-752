@@ -10,15 +10,13 @@
 // Target Devices: 
 // Tool Versions: 
 // Description: 
-// 
+// Synthesisable version of SSD simulation module
 // Dependencies: 
-// 
 // Revision:
 // Revision 0.01 - File Created
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
-
 
 
 module ssd_sim #(parameter VALUE_SIZE = 32, DATA_SIZE = 512, SSD_CAPACITY = 32) (
@@ -40,6 +38,7 @@ module ssd_sim #(parameter VALUE_SIZE = 32, DATA_SIZE = 512, SSD_CAPACITY = 32) 
     reg [VALUE_SIZE-1:0] next_free_addr; // Track the next available address
     reg writing, deleting, reading; // Flags to indicate write, delete, and read states
 
+    // Sequential block triggered by clock or reset
     always @(posedge clk or posedge reset) begin
         if (reset) begin
             // Reset SSD state
@@ -54,7 +53,8 @@ module ssd_sim #(parameter VALUE_SIZE = 32, DATA_SIZE = 512, SSD_CAPACITY = 32) 
             next_free_addr <= 0; // Start scanning from address 0
             data_out <= 0; // Clear data output
         end else begin
-            done <= 0; // Default to not done
+            // Default to not done
+            done <= 0;
 
             // Write Operation
             if (write && ready && !writing) begin
@@ -68,53 +68,42 @@ module ssd_sim #(parameter VALUE_SIZE = 32, DATA_SIZE = 512, SSD_CAPACITY = 32) 
                     next_free_addr <= next_free_addr + 1; // Move to the next address
                     done <= 1; // Write operation complete
                     writing <= 0; // End write operation
-                    ready <= 1; // SSD is ready again
                 end else begin
                     // SSD is full, reject the write request
-                    $display("Error: SSD is full. Write operation denied.");
                     done <= 0; // Indicate operation could not be completed
-                    ready <= 1; // SSD is ready again
                 end
+                ready <= 1; // SSD is ready again
             end
 
-           // Delete Operation
-if (delete && ready && !deleting) begin
-    deleting <= 1; // Start delete operation
-    ready <= 0; // SSD is busy
-    if (valid[addr_in]) begin
-        valid[addr_in] <= 0; // Mark address as invalid
-        ssd_mem[addr_in] <= {DATA_SIZE{1'b0}}; // Optionally clear data (not necessary if invalid)
-        done <= 1; // Indicate delete operation is complete
-    end else begin
-        $display("Error: Attempted to delete from invalid address 0x%0h.", addr_in);
-        done <= 1; // Indicate operation handled (though no action taken)
-    end
-    deleting <= 0; // End delete operation
-    ready <= 1; // SSD is ready again
-    @(posedge clk); // Hold done for one clock cycle
-    done <= 0; // Clear done after the operation completes
-end
+            // Delete Operation
+            if (delete && ready && !deleting) begin
+                deleting <= 1; // Start delete operation
+                ready <= 0; // SSD is busy
+                if (valid[addr_in]) begin
+                    valid[addr_in] <= 0; // Mark address as invalid
+                    ssd_mem[addr_in] <= {DATA_SIZE{1'b0}}; // Clear data (optional)
+                    done <= 1; // Indicate delete operation is complete
+                end else begin
+                    done <= 1; // Indicate operation handled (though no action taken)
+                end
+                deleting <= 0; // End delete operation
+                ready <= 1; // SSD is ready again
+            end
 
             // Read Operation
-           // Read Operation
-if (read && ready && !reading) begin
-    reading <= 1; // Start read operation
-    ready <= 0; // SSD is busy
-    if (valid[addr_in]) begin
-        data_out <= ssd_mem[addr_in]; // Read the data from SSD
-        done <= 1; // Indicate read operation is complete
-    end else begin
-        data_out <= {DATA_SIZE{1'bx}}; // Return invalid data for invalid address
-        done <= 1; // Still set done to indicate the operation is complete
-    end
-    reading <= 0; // End read operation
-    ready <= 1; // SSD is ready again
-    @(posedge clk); // Add a delay to ensure `done` is detected
-    done <= 0; // Clear done after one cycle
-end
+            if (read && ready && !reading) begin
+                reading <= 1; // Start read operation
+                ready <= 0; // SSD is busy
+                if (valid[addr_in]) begin
+                    data_out <= ssd_mem[addr_in]; // Read the data from SSD
+                    done <= 1; // Indicate read operation is complete
+                end else begin
+                    data_out <= {DATA_SIZE{1'bx}}; // Return invalid data for invalid address
+                    done <= 1; // Still set done to indicate the operation is complete
+                end
+                reading <= 0; // End read operation
+                ready <= 1; // SSD is ready again
+            end
         end
     end
 endmodule
-
-
-

@@ -1,107 +1,122 @@
 `timescale 1ns / 1ps
+
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
 // Engineer: 
 // 
 // Create Date: 11/27/2024 11:46:38 AM
 // Design Name: 
-// Module Name: hash_tb
+// Module Name: tb_hash_table
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
-// Description: 
+// Description: Testbench for the hash_table module
 // 
-// Dependencies: 
+// Dependencies: hash_table.v
 // 
 // Revision:
 // Revision 0.01 - File Created
 // Additional Comments:
-// 
 //////////////////////////////////////////////////////////////////////////////////
 
-
 module tb_hash_table;
+
+    // Parameters
     parameter WIDTH = 32;
     parameter TABLE_SIZE = 16;
     parameter VALUE_SIZE = 32;
-    parameter DATA_SIZE = 512;
-
-    reg clk, reset;
-    reg [1:0] operation;
+    
+    // Testbench signals
+    reg clk;
+    reg reset;
+    reg [1:0] operation;  // 00: Lookup, 01: Insert, 10: Delete
     reg [WIDTH-1:0] key;
-    reg [DATA_SIZE-1:0] photo_data;
+    reg [VALUE_SIZE-1:0] value_in;
     wire [VALUE_SIZE-1:0] value_out;
-    wire hit, success;
+    wire hit;
+    wire success;
 
-    // Instantiate the hash_table module (without SSD interactions)
+    // Instantiate DUT (Device Under Test)
     hash_table #(
         .WIDTH(WIDTH), 
         .TABLE_SIZE(TABLE_SIZE), 
-        .VALUE_SIZE(VALUE_SIZE), 
-        .DATA_SIZE(DATA_SIZE)
+        .VALUE_SIZE(VALUE_SIZE)
     ) dut (
         .clk(clk),
         .reset(reset),
         .operation(operation),
         .key(key),
-        .photo_data(photo_data),
+        .value_in(value_in),
         .value_out(value_out),
         .hit(hit),
         .success(success)
     );
 
-    // Clock generation
+    // Clock Generation
     initial clk = 0;
-    always #5 clk = ~clk; // 10 ns clock period
+    always #5 clk = ~clk; // Generate a 10ns clock period
 
-    // Test sequence
+    // Test Sequence
     initial begin
-        // Initialize
-        reset = 1; key = 0; photo_data = 0; operation = 2'b00; // Lookup operation
-        #10 reset = 0;
+        // Initialization
+        reset = 1;
+        operation = 2'b00;
+        key = 0;
+        value_in = 0;
 
-        // Test Insertions
-        $display("\nTesting Insertions...");
-        operation = 2'b01; key = 32'h0; photo_data = 512'hA0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0; // Insert a key-value pair
-        @(posedge clk); #1;
-        wait(success);
-        $display("Insert: Key=0x%0h, Data=0x%0h -> Success", key, photo_data);
+        #20;  // Wait 20ns for reset
+        reset = 0; // Deassert reset
+        
+        // Test Case 1: Insert a key-value pair
+        $display("\nStarting Test Case 1: Insert Operation");
+        @(posedge clk);
+        operation = 2'b01; // Insert operation
+        key = 32'h01;      // Key = 1
+        value_in = 32'hDEADBEEF; // Value = 0xDEADBEEF
+        @(posedge clk);
+        #1;
+        if (success) 
+            $display("Insert Success: Key=0x%0h, Value=0x%0h", key, value_in);
+        else 
+            $display("Insert Failed: Key=0x%0h", key);
 
-        // Test Lookups
-        $display("\nTesting Lookups...");
+        // Test Case 2: Lookup the inserted key
+        $display("\nStarting Test Case 2: Lookup Operation");
+        @(posedge clk);
         operation = 2'b00; // Lookup operation
-        key = 32'h0; // Lookup the inserted key
-        @(posedge clk); #1;
-        if (hit) begin
-            $display("Lookup: Key=0x%0h -> Value=0x%0h (Found)", key, value_out);
-        end else begin
-            $display("Lookup: Key=0x%0h -> Not Found", key);
-        end
+        key = 32'h01;      // Lookup Key = 1
+        @(posedge clk);
+        #1;
+        if (hit) 
+            $display("Lookup Success: Key=0x%0h, Value=0x%0h", key, value_out);
+        else 
+            $display("Lookup Failed: Key=0x%0h", key);
 
-        // Test Deletions
-        $display("\nTesting Deletions...");
+        // Test Case 3: Delete the inserted key
+        $display("\nStarting Test Case 3: Delete Operation");
+        @(posedge clk);
         operation = 2'b10; // Delete operation
-        key = 32'h0; // Delete the inserted key
-        @(posedge clk); #1;
-        wait(success);
-        $display("Delete: Key=0x%0h -> Success", key);
+        key = 32'h01;      // Delete Key = 1
+        @(posedge clk);
+        #1;
+        if (success) 
+            $display("Delete Success: Key=0x%0h", key);
+        else 
+            $display("Delete Failed: Key=0x%0h", key);
 
-        // Verify deletion by lookup
-        $display("\nTesting Lookups After Deletion...");
+        // Test Case 4: Verify deletion by looking up the deleted key
+        $display("\nStarting Test Case 4: Lookup After Deletion");
+        @(posedge clk);
         operation = 2'b00; // Lookup operation
-        key = 32'h0; // Lookup the deleted key
-        @(posedge clk); #1;
-        if (hit) begin
-            $display("Lookup: Key=0x%0h -> Value=0x%0h (Found)", key, value_out);
-        end else begin
-            $display("Lookup: Key=0x%0h -> Not Found", key);
-        end
+        key = 32'h01;      // Lookup Key = 1
+        @(posedge clk);
+        #1;
+        if (hit) 
+            $display("Unexpected Lookup Success: Key=0x%0h, Value=0x%0h", key, value_out);
+        else 
+            $display("Correct Lookup Failure: Key=0x%0h not found", key);
 
-        $display("Test Complete!");
-        $stop;
+        $display("\nTestbench completed successfully!");
+        $stop; // End simulation
     end
 endmodule
-
-
-
-

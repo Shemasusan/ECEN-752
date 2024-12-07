@@ -1,29 +1,24 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Engineer: Shema Thomas
 // 
-// Create Date: 11/21/2024 12:14:05 PM
-// Design Name: 
+// Design Name: Hash Function
 // Module Name: hash_function
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
+// Description: Synthesizable hash function using a modulo operation.
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-
-module hash_function #(parameter WIDTH = 32, TABLE_SIZE = 1024) (
-    input [WIDTH-1:0] key,
-    output [$clog2(TABLE_SIZE)-1:0] hash_index
+module hash_function 
+#(
+    parameter WIDTH = 32,         // Key width
+    parameter TABLE_SIZE = 1024   // Hash table size
+)
+(
+    input [WIDTH-1:0] key,                      // Input key
+    output reg [$clog2(TABLE_SIZE)-1:0] hash_index // Hash index output
 );
-    assign hash_index = key % TABLE_SIZE; // Simple modulo operation
+    always @(*) begin
+        // Compute the hash index using modulo operation
+        hash_index = key % TABLE_SIZE;
+    end
 endmodule
-

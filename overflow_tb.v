@@ -9,7 +9,7 @@
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
-// Description: 
+// Description: Testbench for hash_table_with_overflow module
 // 
 // Dependencies: 
 // 
@@ -65,22 +65,26 @@ module tb_hash_table_with_overflow();
         test_insert(32'h0004, 32'hDDDD); // Insert key=4, value=0xDDDD
 
         // Fill up on-chip memory and test overflow handling
-        
+        $display("Filling up on-chip memory...");
         for (i = 0; i < TABLE_SIZE; i=i+1) begin
             test_insert(i, i * 16); // Insert into all on-chip bins
         end
+        // Attempt to insert into overflow space
+        $display("Testing Overflow Handling...");
         test_insert(32'h1000, 32'h1234); // Overflow into external memory
+        test_insert(32'h1001, 32'h5678); // Overflow into external memory
 
         // Lookup operations
         $display("Testing Lookups...");
         test_lookup(32'h0001); // Lookup key=1
         test_lookup(32'h0002); // Lookup key=2
         test_lookup(32'h1000); // Lookup key from external memory
+        test_lookup(32'h1001); // Lookup key from external memory
 
         // Delete operations
         $display("Testing Deletions...");
         test_delete(32'h0001); // Delete key=1
-        test_lookup(32'h0001); // Verify deletion
+        test_lookup(32'h0001'); // Verify deletion
         test_delete(32'h1000); // Delete key from external memory
         test_lookup(32'h1000); // Verify deletion from external memory
 
